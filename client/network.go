@@ -9,12 +9,12 @@ import (
 	"net"
 	"time"
 
-	"gopkg.in/jcmturner/gokrb5.v7/iana/errorcode"
-	"gopkg.in/jcmturner/gokrb5.v7/messages"
+	"github.com/ropnop/gokrb5/iana/errorcode"
+	"github.com/ropnop/gokrb5/messages"
 )
 
 // SendToKDC performs network actions to send data to the KDC.
-func (cl *Client) sendToKDC(b []byte, realm string) ([]byte, error) {
+func (cl *Client) SendToKDC(b []byte, realm string) ([]byte, error) {
 	var rb []byte
 	if cl.Config.LibDefaults.UDPPreferenceLimit == 1 {
 		//1 means we should always use TCP

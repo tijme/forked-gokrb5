@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/jcmturner/gokrb5.v7/credentials"
-	"gopkg.in/jcmturner/gokrb5.v7/iana"
-	"gopkg.in/jcmturner/gokrb5.v7/iana/etypeID"
-	"gopkg.in/jcmturner/gokrb5.v7/iana/msgtype"
-	"gopkg.in/jcmturner/gokrb5.v7/iana/nametype"
-	"gopkg.in/jcmturner/gokrb5.v7/iana/patype"
-	"gopkg.in/jcmturner/gokrb5.v7/keytab"
-	"gopkg.in/jcmturner/gokrb5.v7/test/testdata"
+	"github.com/ropnop/gokrb5/credentials"
+	"github.com/ropnop/gokrb5/iana"
+	"github.com/ropnop/gokrb5/iana/etypeID"
+	"github.com/ropnop/gokrb5/iana/msgtype"
+	"github.com/ropnop/gokrb5/iana/nametype"
+	"github.com/ropnop/gokrb5/iana/patype"
+	"github.com/ropnop/gokrb5/keytab"
+	"github.com/ropnop/gokrb5/test/testdata"
 )
 
 const (

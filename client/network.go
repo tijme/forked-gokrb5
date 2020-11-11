@@ -69,49 +69,47 @@ func (cl *Client) SendToKDC(b []byte, realm string) ([]byte, error) {
 }
 
 // dialKDCTCP establishes a UDP connection to a KDC.
-func dialKDCUDP(count int, kdcs map[int]string) (conn *net.UDPConn, err error) {
+func dialKDCUDP(count int, kdcs map[int]string) (*net.UDPConn, error) {
 	i := 1
 	for i <= count {
-		udpAddr, e := net.ResolveUDPAddr("udp", kdcs[i])
-		if e != nil {
-			err = fmt.Errorf("error resolving KDC address: %v", e)
-			return
+		udpAddr, err := net.ResolveUDPAddr("udp", kdcs[i])
+		if err != nil {
+			return nil, fmt.Errorf("error resolving KDC address: %v", err)
 		}
-		conn, err = net.DialUDP("udp", nil, udpAddr)
+
+		conn, err := net.DialTimeout("udp", udpAddr.String(), 5*time.Second)
 		if err == nil {
-			err = conn.SetDeadline(time.Now().Add(5 * time.Second))
-			if err != nil {
-				return
+			if err := conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				return nil, err
 			}
-			return
+			// conn is guaranteed to be a UDPConn
+			return conn.(*net.UDPConn), nil
 		}
 		i++
 	}
-	err = errors.New("error in getting a UDP connection to any of the KDCs")
-	return
+	return nil, errors.New("error in getting a UDP connection to any of the KDCs")
 }
 
 // dialKDCTCP establishes a TCP connection to a KDC.
-func dialKDCTCP(count int, kdcs map[int]string) (conn *net.TCPConn, err error) {
+func dialKDCTCP(count int, kdcs map[int]string) (*net.TCPConn, error) {
 	i := 1
 	for i <= count {
-		tcpAddr, e := net.ResolveTCPAddr("tcp", kdcs[i])
-		if e != nil {
-			err = fmt.Errorf("error resolving KDC address: %v", e)
-			return
+		tcpAddr, err := net.ResolveTCPAddr("tcp", kdcs[i])
+		if err != nil {
+			return nil, fmt.Errorf("error resolving KDC address: %v", err)
 		}
-		conn, err = net.DialTCP("tcp", nil, tcpAddr)
+
+		conn, err := net.DialTimeout("tcp", tcpAddr.String(), 5*time.Second)
 		if err == nil {
-			err = conn.SetDeadline(time.Now().Add(5 * time.Second))
-			if err != nil {
-				return
+			if err := conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				return nil, err
 			}
-			return
+			// conn is guaranteed to be a TCPConn
+			return conn.(*net.TCPConn), nil
 		}
 		i++
 	}
-	err = errors.New("error in getting a TCP connection to any of the KDCs")
-	return
+	return nil, errors.New("error in getting a TCP connection to any of the KDCs")
 }
 
 // sendKDCUDP sends bytes to the KDC via UDP.
@@ -174,18 +172,7 @@ func (cl *Client) sendUDP(conn *net.UDPConn, b []byte) ([]byte, error) {
 func (cl *Client) sendTCP(conn *net.TCPConn, b []byte) ([]byte, error) {
 	defer conn.Close()
 	var r []byte
-	/*
-		RFC https://tools.ietf.org/html/rfc4120#section-7.2.2
-		Each request (KRB_KDC_REQ) and response (KRB_KDC_REP or KRB_ERROR)
-		sent over the TCP stream is preceded by the length of the request as
-		4 octets in network byte order.  The high bit of the length is
-		reserved for future expansion and MUST currently be set to zero.  If
-		a KDC that does not understand how to interpret a set high bit of the
-		length encoding receives a request with the high order bit of the
-		length set, it MUST return a KRB-ERROR message with the error
-		KRB_ERR_FIELD_TOOLONG and MUST close the TCP stream.
-		NB: network byte order == big endian
-	*/
+	// RFC 4120 7.2.2 specifies the first 4 bytes indicate the length of the message in big endian order.
 	var buf bytes.Buffer
 	err := binary.Write(&buf, binary.BigEndian, uint32(len(b)))
 	if err != nil {

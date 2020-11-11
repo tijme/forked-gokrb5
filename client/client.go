@@ -117,7 +117,7 @@ func (cl *Client) Key(etype etype.EType, krberr *messages.KRBError) (types.Encry
 	if cl.Credentials.HasKeytab() && etype != nil {
 		return cl.Credentials.Keytab().GetEncryptionKey(cl.Credentials.CName(), cl.Credentials.Domain(), 0, etype.GetETypeID())
 	} else if cl.Credentials.HasPassword() {
-		if krberr.ErrorCode == errorcode.KDC_ERR_PREAUTH_REQUIRED {
+		if krberr != nil && krberr.ErrorCode == errorcode.KDC_ERR_PREAUTH_REQUIRED {
 			var pas types.PADataSequence
 			err := pas.Unmarshal(krberr.EData)
 			if err != nil {
@@ -180,15 +180,23 @@ func (cl *Client) Login() error {
 	if err != nil {
 		return krberror.Errorf(err, krberror.KRBMsgError, "error generating new AS_REQ")
 	}
-	err = setPAData(cl, messages.KRBError{}, &ASReq)
-	if err != nil {
-		return krberror.Errorf(err, krberror.KRBMsgError, "failed setting AS_REQ PAData")
-	}
 	ASRep, err := cl.ASExchange(cl.Credentials.Domain(), ASReq, 0)
 	if err != nil {
 		return err
 	}
 	cl.addSession(ASRep.Ticket, ASRep.DecryptedEncPart)
+	return nil
+}
+
+// AffirmLogin will only perform an AS exchange with the KDC if the client does not already have a TGT.
+func (cl *Client) AffirmLogin() error {
+	_, endTime, _, _, err := cl.sessionTimes(cl.Credentials.Domain())
+	if err != nil || time.Now().UTC().After(endTime) {
+		err := cl.Login()
+		if err != nil {
+			return fmt.Errorf("could not get valid TGT for client's realm: %v", err)
+		}
+	}
 	return nil
 }
 

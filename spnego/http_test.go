@@ -17,17 +17,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/jcmturner/goidentity.v3"
-	"github.com/ropnop/gokrb5/client"
-	"github.com/ropnop/gokrb5/config"
-	"github.com/ropnop/gokrb5/keytab"
-	"github.com/ropnop/gokrb5/service"
-	"github.com/ropnop/gokrb5/test/testdata"
+	"gopkg.in/jcmturner/gokrb5.v7/client"
+	"gopkg.in/jcmturner/gokrb5.v7/config"
+	"gopkg.in/jcmturner/gokrb5.v7/keytab"
+	"gopkg.in/jcmturner/gokrb5.v7/service"
+	"gopkg.in/jcmturner/gokrb5.v7/test"
+	"gopkg.in/jcmturner/gokrb5.v7/test/testdata"
 )
 
 func TestClient_SetSPNEGOHeader(t *testing.T) {
-	if os.Getenv("INTEGRATION") != "1" {
-		t.Skip("Skipping integration test")
-	}
+	test.Integration(t)
 	b, _ := hex.DecodeString(testdata.TESTUSER1_KEYTAB)
 	kt := keytab.New()
 	kt.Unmarshal(b)
@@ -37,49 +36,46 @@ func TestClient_SetSPNEGOHeader(t *testing.T) {
 		addr = testdata.TEST_KDC_ADDR
 	}
 	c.Realms[0].KDC = []string{addr + ":" + testdata.TEST_KDC}
-	cl := client.NewClientWithKeytab("testuser1", "TEST.GOKRB5", kt, c)
+	l := log.New(os.Stderr, "SPNEGO Client:", log.LstdFlags)
+	cl := client.NewClientWithKeytab("testuser1", "TEST.GOKRB5", kt, c, client.Logger(l))
 
 	err := cl.Login()
 	if err != nil {
 		t.Fatalf("error on AS_REQ: %v\n", err)
 	}
-	url := os.Getenv("TEST_HTTP_URL")
-	if url == "" {
-		url = testdata.TEST_HTTP_URL
+	urls := []string{
+		"http://cname.test.gokrb5",
+		"http://host.test.gokrb5",
 	}
 	paths := []string{
 		"/modkerb/index.html",
-		"/modgssapi/index.html",
+		//"/modgssapi/index.html",
 	}
-	for _, p := range paths {
-		r, _ := http.NewRequest("GET", url+p, nil)
-		httpCl := http.DefaultClient
-		httpCl.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			t.Logf("http client redirect: %+v", *req)
-			return nil
+	for _, url := range urls {
+		for _, p := range paths {
+			r, _ := http.NewRequest("GET", url+p, nil)
+			httpResp, err := http.DefaultClient.Do(r)
+			if err != nil {
+				t.Fatalf("%s request error: %v", url+p, err)
+			}
+			assert.Equal(t, http.StatusUnauthorized, httpResp.StatusCode, "Status code in response to client with no SPNEGO not as expected")
+
+			err = SetSPNEGOHeader(cl, r, "")
+			if err != nil {
+				t.Fatalf("error setting client SPNEGO header: %v", err)
+			}
+
+			httpResp, err = http.DefaultClient.Do(r)
+			if err != nil {
+				t.Fatalf("%s request error: %v\n", url+p, err)
+			}
+			assert.Equal(t, http.StatusOK, httpResp.StatusCode, "Status code in response to client SPNEGO request not as expected")
 		}
-		httpResp, err := httpCl.Do(r)
-		if err != nil {
-			t.Fatalf("%s request error: %v", url+p, err)
-		}
-		assert.Equal(t, http.StatusUnauthorized, httpResp.StatusCode, "Status code in response to client with no SPNEGO not as expected")
-		err = SetSPNEGOHeader(cl, r, "HTTP/host.test.gokrb5")
-		if err != nil {
-			t.Fatalf("error setting client SPNEGO header: %v", err)
-		}
-		//t.Logf("Reqeust: %+v\n\n", *r)
-		httpResp, err = http.DefaultClient.Do(r)
-		if err != nil {
-			t.Fatalf("%s request error: %v\n", url+p, err)
-		}
-		assert.Equal(t, http.StatusOK, httpResp.StatusCode, "Status code in response to client SPNEGO request not as expected")
 	}
 }
 
 func TestSPNEGOHTTPClient(t *testing.T) {
-	if os.Getenv("INTEGRATION") != "1" {
-		t.Skip("Skipping integration test")
-	}
+	test.Integration(t)
 	b, _ := hex.DecodeString(testdata.TESTUSER1_KEYTAB)
 	kt := keytab.New()
 	kt.Unmarshal(b)
@@ -89,15 +85,16 @@ func TestSPNEGOHTTPClient(t *testing.T) {
 		addr = testdata.TEST_KDC_ADDR
 	}
 	c.Realms[0].KDC = []string{addr + ":" + testdata.TEST_KDC}
-	cl := client.NewClientWithKeytab("testuser1", "TEST.GOKRB5", kt, c)
+	l := log.New(os.Stderr, "SPNEGO Client:", log.LstdFlags)
+	cl := client.NewClientWithKeytab("testuser1", "TEST.GOKRB5", kt, c, client.Logger(l))
 
 	err := cl.Login()
 	if err != nil {
 		t.Fatalf("error on AS_REQ: %v\n", err)
 	}
-	url := os.Getenv("TEST_HTTP_URL")
-	if url == "" {
-		url = testdata.TEST_HTTP_URL
+	urls := []string{
+		"http://cname.test.gokrb5",
+		"http://host.test.gokrb5",
 	}
 	// This path issues a redirect which the http client will automatically follow.
 	// It should cause a replay issue if the negInit token is sent in the first instance.
@@ -105,19 +102,21 @@ func TestSPNEGOHTTPClient(t *testing.T) {
 		"/modgssapi", // This issues a redirect which the http client will automatically follow. Could cause a replay issue
 		"/redirect",
 	}
-	for _, p := range paths {
-		r, _ := http.NewRequest("GET", url+p, nil)
-		httpCl := http.DefaultClient
-		httpCl.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			t.Logf("http client redirect: %+v", *req)
-			return nil
+	for _, url := range urls {
+		for _, p := range paths {
+			r, _ := http.NewRequest("GET", url+p, nil)
+			httpCl := http.DefaultClient
+			httpCl.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				t.Logf("http client redirect: %+v", *req)
+				return nil
+			}
+			spnegoCl := NewClient(cl, httpCl, "")
+			httpResp, err := spnegoCl.Do(r)
+			if err != nil {
+				t.Fatalf("%s request error: %v", url+p, err)
+			}
+			assert.Equal(t, http.StatusOK, httpResp.StatusCode, "Status code in response to client SPNEGO request not as expected")
 		}
-		spnegoCl := NewClient(cl, httpCl, "HTTP/host.test.gokrb5")
-		httpResp, err := spnegoCl.Do(r)
-		if err != nil {
-			t.Fatalf("%s request error: %v", url+p, err)
-		}
-		assert.Equal(t, http.StatusOK, httpResp.StatusCode, "Status code in response to client SPNEGO request not as expected")
 	}
 }
 
@@ -130,13 +129,11 @@ func TestService_SPNEGOKRB_NoAuthHeader(t *testing.T) {
 		t.Fatalf("Request error: %v\n", err)
 	}
 	assert.Equal(t, http.StatusUnauthorized, httpResp.StatusCode, "Status code in response to client with no SPNEGO not as expected")
-	assert.Equal(t, "Negotiate", httpResp.Header.Get("WWW-Authenticate"), "Negitation header not set by server.")
+	assert.Equal(t, "Negotiate", httpResp.Header.Get("WWW-Authenticate"), "Negotiation header not set by server.")
 }
 
 func TestService_SPNEGOKRB_ValidUser(t *testing.T) {
-	if os.Getenv("INTEGRATION") != "1" {
-		t.Skip("Skipping integration test")
-	}
+	test.Integration(t)
 
 	s := httpServer()
 	defer s.Close()
@@ -156,9 +153,7 @@ func TestService_SPNEGOKRB_ValidUser(t *testing.T) {
 }
 
 func TestService_SPNEGOKRB_Replay(t *testing.T) {
-	if os.Getenv("INTEGRATION") != "1" {
-		t.Skip("Skipping integration test")
-	}
+	test.Integration(t)
 
 	s := httpServer()
 	defer s.Close()
@@ -215,9 +210,7 @@ func TestService_SPNEGOKRB_Replay(t *testing.T) {
 }
 
 func TestService_SPNEGOKRB_ReplayCache_Concurrency(t *testing.T) {
-	if os.Getenv("INTEGRATION") != "1" {
-		t.Skip("Skipping integration test")
-	}
+	test.Integration(t)
 
 	s := httpServer()
 	defer s.Close()
@@ -255,9 +248,7 @@ func TestService_SPNEGOKRB_ReplayCache_Concurrency(t *testing.T) {
 }
 
 func TestService_SPNEGOKRB_Upload(t *testing.T) {
-	if os.Getenv("INTEGRATION") != "1" {
-		t.Skip("Skipping integration test")
-	}
+	test.Integration(t)
 
 	s := httpServer()
 	defer s.Close()
@@ -280,15 +271,11 @@ func TestService_SPNEGOKRB_Upload(t *testing.T) {
 	bodyWriter.Close()
 
 	r, _ := http.NewRequest("POST", s.URL, bodyBuf)
+	r.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 
 	cl := getClient()
-	err = SetSPNEGOHeader(cl, r, "HTTP/host.test.gokrb5")
-	if err != nil {
-		t.Fatalf("error setting client's SPNEGO header: %v", err)
-	}
-
-	r.Header.Set("Content-Type", bodyWriter.FormDataContentType())
-	httpResp, err := http.DefaultClient.Do(r)
+	spnegoCl := NewClient(cl, nil, "HTTP/host.test.gokrb5")
+	httpResp, err := spnegoCl.Do(r)
 	if err != nil {
 		t.Fatalf("Request error: %v\n", err)
 	}

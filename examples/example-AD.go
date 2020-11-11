@@ -5,36 +5,37 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"gopkg.in/jcmturner/goidentity.v3"
-	"github.com/ropnop/gokrb5/client"
-	"github.com/ropnop/gokrb5/config"
-	"github.com/ropnop/gokrb5/credentials"
-	"github.com/ropnop/gokrb5/keytab"
-	"github.com/ropnop/gokrb5/service"
-	"github.com/ropnop/gokrb5/spnego"
-	"github.com/ropnop/gokrb5/test/testdata"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
+
+	"gopkg.in/jcmturner/goidentity.v3"
+	"gopkg.in/jcmturner/gokrb5.v7/client"
+	"gopkg.in/jcmturner/gokrb5.v7/config"
+	"gopkg.in/jcmturner/gokrb5.v7/credentials"
+	"gopkg.in/jcmturner/gokrb5.v7/keytab"
+	"gopkg.in/jcmturner/gokrb5.v7/service"
+	"gopkg.in/jcmturner/gokrb5.v7/spnego"
+	"gopkg.in/jcmturner/gokrb5.v7/test/testdata"
 )
 
 func main() {
 	s := httpServer()
 	defer s.Close()
 
-	b, _ := hex.DecodeString(testdata.TESTUSER1_USERKRB5_AD_KEYTAB)
+	b, _ := hex.DecodeString(testdata.KEYTAB_TESTUSER1_USER_GOKRB5)
 	kt := keytab.New()
 	kt.Unmarshal(b)
-	c, _ := config.NewConfigFromString(testdata.TEST_KRB5CONF)
+	c, _ := config.NewConfigFromString(testdata.KRB5_CONF_AD)
 	cl := client.NewClientWithKeytab("testuser1", "USER.GOKRB5", kt, c, client.DisablePAFXFAST(true))
 	httpRequest(s.URL, cl)
 
-	b, _ = hex.DecodeString(testdata.TESTUSER2_USERKRB5_AD_KEYTAB)
+	b, _ = hex.DecodeString(testdata.KEYTAB_TESTUSER2_USER_GOKRB5)
 	kt = keytab.New()
 	kt.Unmarshal(b)
-	c, _ = config.NewConfigFromString(testdata.TEST_KRB5CONF)
+	c, _ = config.NewConfigFromString(testdata.KRB5_CONF_AD)
 	cl = client.NewClientWithKeytab("testuser2", "USER.GOKRB5", kt, c, client.DisablePAFXFAST(true))
 	httpRequest(s.URL, cl)
 
@@ -49,7 +50,7 @@ func httpRequest(url string, cl *client.Client) {
 		l.Printf("Error on AS_REQ: %v\n", err)
 	}
 	r, _ := http.NewRequest("GET", url, nil)
-	err = spnego.SetSPNEGOHeader(cl, r, "HTTP/host.test.gokrb5")
+	err = spnego.SetSPNEGOHeader(cl, r, "HTTP/host.res.gokrb5")
 	if err != nil {
 		l.Printf("Error setting client SPNEGO header: %v", err)
 	}
@@ -64,7 +65,7 @@ func httpRequest(url string, cl *client.Client) {
 
 func httpServer() *httptest.Server {
 	l := log.New(os.Stderr, "GOKRB5 Service Tests: ", log.Ldate|log.Ltime|log.Lshortfile)
-	b, _ := hex.DecodeString(testdata.HTTP_KEYTAB)
+	b, _ := hex.DecodeString(testdata.KEYTAB_SYSHTTP_RES_GOKRB5)
 	kt := keytab.New()
 	kt.Unmarshal(b)
 	th := http.HandlerFunc(testAppHandler)

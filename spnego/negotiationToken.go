@@ -13,39 +13,7 @@ import (
 	"github.com/ropnop/gokrb5/types"
 )
 
-/*
-https://msdn.microsoft.com/en-us/library/ms995330.aspx
-
-NegotiationToken ::= CHOICE {
-  negTokenInit    [0] NegTokenInit,  This is the Negotiation token sent from the client to the server.
-  negTokenResp    [1] NegTokenResp
-}
-
-NegTokenInit ::= SEQUENCE {
-  mechTypes       [0] MechTypeList,
-  reqFlags        [1] ContextFlags  OPTIONAL,
-  -- inherited from RFC 2478 for backward compatibility,
-  -- RECOMMENDED to be left out
-  mechToken       [2] OCTET STRING  OPTIONAL,
-  mechListMIC     [3] OCTET STRING  OPTIONAL,
-  ...
-}
-
-NegTokenResp ::= SEQUENCE {
-  negState       [0] ENUMERATED {
-    accept-completed    (0),
-    accept-incomplete   (1),
-    reject              (2),
-    request-mic         (3)
-  }                                 OPTIONAL,
-  -- REQUIRED in the first reply from the target
-  supportedMech   [1] MechType      OPTIONAL,
-  -- present only in the first reply from the target
-  responseToken   [2] OCTET STRING  OPTIONAL,
-  mechListMIC     [3] OCTET STRING  OPTIONAL,
-  ...
-}
-*/
+// https://msdn.microsoft.com/en-us/library/ms995330.aspx
 
 // Negotiation state values.
 const (
@@ -140,34 +108,37 @@ func (n *NegTokenInit) Unmarshal(b []byte) error {
 // Verify an Init negotiation token
 func (n *NegTokenInit) Verify() (bool, gssapi.Status) {
 	// Check if supported mechanisms are in the MechTypeList
+	var mtSupported bool
 	for _, m := range n.MechTypes {
 		if m.Equal(gssapi.OID(gssapi.OIDKRB5)) || m.Equal(gssapi.OID(gssapi.OIDMSLegacyKRB5)) {
 			if n.mechToken == nil && n.MechTokenBytes == nil {
 				return false, gssapi.Status{Code: gssapi.StatusContinueNeeded}
 			}
-			mt := new(KRB5Token)
-			mt.settings = n.settings
-			if n.mechToken == nil {
-				err := mt.Unmarshal(n.MechTokenBytes)
-				if err != nil {
-					return false, gssapi.Status{Code: gssapi.StatusDefectiveToken, Message: err.Error()}
-				}
-				n.mechToken = mt
-			} else {
-				var ok bool
-				mt, ok = n.mechToken.(*KRB5Token)
-				if !ok {
-					return false, gssapi.Status{Code: gssapi.StatusDefectiveToken, Message: "MechToken is not a KRB5 token as expected"}
-				}
-			}
-			if !mt.OID.Equal(n.MechTypes[0]) {
-				return false, gssapi.Status{Code: gssapi.StatusDefectiveToken, Message: "OID of MechToken does not match the first in the MechTypeList"}
-			}
-			// Verify the mechtoken
-			return n.mechToken.Verify()
+			mtSupported = true
+			break
 		}
 	}
-	return false, gssapi.Status{Code: gssapi.StatusBadMech, Message: "no supported mechanism specified in negotiation"}
+	if !mtSupported {
+		return false, gssapi.Status{Code: gssapi.StatusBadMech, Message: "no supported mechanism specified in negotiation"}
+	}
+	// There should be some mechtoken bytes for a KRB5Token (other mech types are not supported)
+	mt := new(KRB5Token)
+	mt.settings = n.settings
+	if n.mechToken == nil {
+		err := mt.Unmarshal(n.MechTokenBytes)
+		if err != nil {
+			return false, gssapi.Status{Code: gssapi.StatusDefectiveToken, Message: err.Error()}
+		}
+		n.mechToken = mt
+	} else {
+		var ok bool
+		mt, ok = n.mechToken.(*KRB5Token)
+		if !ok {
+			return false, gssapi.Status{Code: gssapi.StatusDefectiveToken, Message: "MechToken is not a KRB5 token as expected"}
+		}
+	}
+	// Verify the mechtoken
+	return n.mechToken.Verify()
 }
 
 // Context returns the SPNEGO context which will contain any verify user identity information.
@@ -230,7 +201,7 @@ func (n *NegTokenResp) Verify() (bool, gssapi.Status) {
 		if n.mechToken == nil && n.ResponseToken == nil {
 			return false, gssapi.Status{Code: gssapi.StatusContinueNeeded}
 		}
-		var mt *KRB5Token
+		mt := new(KRB5Token)
 		mt.settings = n.settings
 		if n.mechToken == nil {
 			err := mt.Unmarshal(n.ResponseToken)
@@ -244,6 +215,9 @@ func (n *NegTokenResp) Verify() (bool, gssapi.Status) {
 			if !ok {
 				return false, gssapi.Status{Code: gssapi.StatusDefectiveToken, Message: "MechToken is not a KRB5 token as expected"}
 			}
+		}
+		if mt == nil {
+			return false, gssapi.Status{Code: gssapi.StatusContinueNeeded}
 		}
 		// Verify the mechtoken
 		return mt.Verify()

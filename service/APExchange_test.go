@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/client"
 	"github.com/ropnop/gokrb5/config"
 	"github.com/ropnop/gokrb5/credentials"
@@ -16,6 +15,7 @@ import (
 	"github.com/ropnop/gokrb5/messages"
 	"github.com/ropnop/gokrb5/test/testdata"
 	"github.com/ropnop/gokrb5/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestVerifyAPREQ(t *testing.T) {

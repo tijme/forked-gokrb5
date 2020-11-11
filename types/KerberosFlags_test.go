@@ -2,8 +2,8 @@ package types
 
 import (
 	"github.com/jcmturner/gofork/encoding/asn1"
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/iana/flags"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 

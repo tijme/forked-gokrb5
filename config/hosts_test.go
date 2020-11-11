@@ -3,9 +3,9 @@ package config
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/test"
 	"github.com/ropnop/gokrb5/test/testdata"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfig_GetKDCsUsesConfiguredKDC(t *testing.T) {

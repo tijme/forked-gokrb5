@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/iana/nametype"
+	"github.com/stretchr/testify/assert"
 
 	"testing"
 )

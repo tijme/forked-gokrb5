@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"golang.org/x/crypto/pbkdf2"
 	"github.com/ropnop/gokrb5/crypto/etype"
 	"github.com/ropnop/gokrb5/iana/etypeID"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 const (

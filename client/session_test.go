@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/config"
 	"github.com/ropnop/gokrb5/iana/etypeID"
 	"github.com/ropnop/gokrb5/keytab"
 	"github.com/ropnop/gokrb5/test"
 	"github.com/ropnop/gokrb5/test/testdata"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMultiThreadedClientSession(t *testing.T) {

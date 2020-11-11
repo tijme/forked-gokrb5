@@ -4,10 +4,10 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/iana/nametype"
 	"github.com/ropnop/gokrb5/test/testdata"
 	"github.com/ropnop/gokrb5/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChangePasswdData_Marshal(t *testing.T) {

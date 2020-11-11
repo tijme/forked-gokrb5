@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/credentials"
 	"github.com/ropnop/gokrb5/iana"
 	"github.com/ropnop/gokrb5/iana/etypeID"
@@ -15,6 +14,7 @@ import (
 	"github.com/ropnop/gokrb5/iana/patype"
 	"github.com/ropnop/gokrb5/keytab"
 	"github.com/ropnop/gokrb5/test/testdata"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jcmturner/rpc/v2/mstypes"
 	"github.com/ropnop/gokrb5/v8/crypto"
 	"github.com/ropnop/gokrb5/v8/iana/keyusage"
 	"github.com/ropnop/gokrb5/v8/types"
-	"github.com/jcmturner/rpc/v2/mstypes"
 )
 
 const (

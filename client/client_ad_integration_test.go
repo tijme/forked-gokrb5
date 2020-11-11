@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"log"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/config"
 	"github.com/ropnop/gokrb5/iana/etypeID"
 	"github.com/ropnop/gokrb5/iana/nametype"
@@ -13,6 +12,7 @@ import (
 	"github.com/ropnop/gokrb5/test"
 	"github.com/ropnop/gokrb5/test/testdata"
 	"github.com/ropnop/gokrb5/types"
+	"github.com/stretchr/testify/assert"
 
 	"testing"
 )

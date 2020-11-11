@@ -14,13 +14,13 @@ import (
 	"net/url"
 	"strings"
 
-	"gopkg.in/jcmturner/goidentity.v3"
 	"github.com/ropnop/gokrb5/client"
 	"github.com/ropnop/gokrb5/gssapi"
 	"github.com/ropnop/gokrb5/keytab"
 	"github.com/ropnop/gokrb5/krberror"
 	"github.com/ropnop/gokrb5/service"
 	"github.com/ropnop/gokrb5/types"
+	"gopkg.in/jcmturner/goidentity.v3"
 )
 
 // Client side functionality //

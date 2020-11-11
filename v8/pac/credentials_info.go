@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jcmturner/rpc/v2/mstypes"
+	"github.com/jcmturner/rpc/v2/ndr"
 	"github.com/ropnop/gokrb5/v8/crypto"
 	"github.com/ropnop/gokrb5/v8/iana/keyusage"
 	"github.com/ropnop/gokrb5/v8/types"
-	"github.com/jcmturner/rpc/v2/mstypes"
-	"github.com/jcmturner/rpc/v2/ndr"
 )
 
 // https://msdn.microsoft.com/en-us/library/cc237931.aspx

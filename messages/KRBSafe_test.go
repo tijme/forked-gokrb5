@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/iana"
 	"github.com/ropnop/gokrb5/iana/addrtype"
 	"github.com/ropnop/gokrb5/iana/msgtype"
 	"github.com/ropnop/gokrb5/test/testdata"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUnmarshalKRBSafe(t *testing.T) {

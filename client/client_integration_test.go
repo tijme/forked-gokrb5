@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/client"
 	"github.com/ropnop/gokrb5/config"
 	"github.com/ropnop/gokrb5/credentials"
@@ -23,6 +22,7 @@ import (
 	"github.com/ropnop/gokrb5/spnego"
 	"github.com/ropnop/gokrb5/test"
 	"github.com/ropnop/gokrb5/test/testdata"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"sync"
 )

@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ropnop/gokrb5/crypto/common"
 	"github.com/ropnop/gokrb5/crypto/rfc8009"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAes256CtsHmacSha384192_StringToKey(t *testing.T) {
